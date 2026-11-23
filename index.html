@@ -30,7 +30,7 @@ h1{font-weight:normal;font-size:clamp(1.1rem,3.4vh,1.5rem);margin:1px 0;color:#f
 .datelab{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;font-style:italic;font-size:clamp(.95rem,5cqw,1.4rem);padding:0 .35em;white-space:nowrap}
 .entries{margin-top:4cqw}
 .entry{margin-bottom:4.5cqw;font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;font-size:clamp(.95rem,5.2cqw,1.5rem);line-height:1.35}
-.entry .sur{letter-spacing:.05em;font-weight:600}
+.entry .sur{text-transform:uppercase;letter-spacing:.05em;font-weight:600}
 .entry .fn{font-style:italic}
 .entry .dt{display:block;text-align:right;padding-left:25%;font-style:italic}
 .bottom{position:absolute;left:7cqw;right:7cqw;bottom:4cqw}
@@ -122,6 +122,12 @@ function render(i,instant,dir){
   var old=idx;
   idx=((i%pages.length)+pages.length)%pages.length;
   var p=pages[idx],inner=$("inner"),h=build(p);
+  /* A temporary page exists only when today has no remembrance entries.
+     Set the explanatory banner here so it works on initial load, refresh,
+     direct hash links, dropdown selection and arrow navigation. */
+  if(p.temporary&&!p.items.length){
+    say("No remembrance entries for "+p.d+" "+MN[p.m-1]);
+  }
   clearLeaves();
   var canAnim=shown&&!instant&&!reduce&&idx!==old&&$("page").animate;
   if(!canAnim){inner.innerHTML=h;}
