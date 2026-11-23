@@ -85,6 +85,15 @@ var TAG="Remembered on the day of their passing";
 var pages=[],map={};
 DATA.forEach(function(e){var k=e.m+"-"+e.d;if(!map[k]){map[k]={m:e.m,d:e.d,k:k,items:[]};pages.push(map[k]);}map[k].items.push(e);});
 pages.sort(function(a,b){return a.m-b.m||a.d-b.d;});
+/* Ensure the Today button always has an exact page to display. If there are
+   no remembrance entries for today's date, add one temporary blank page for
+   today only. This does not alter the underlying remembrance data. */
+var now=new Date(),todayM=now.getMonth()+1,todayD=now.getDate(),todayK=todayM+"-"+todayD;
+if(!map[todayK]){
+  map[todayK]={m:todayM,d:todayD,k:todayK,items:[],temporary:true};
+  pages.push(map[todayK]);
+  pages.sort(function(a,b){return a.m-b.m||a.d-b.d;});
+}
 var idx=0;
 var $=function(id){return document.getElementById(id);};
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
@@ -150,8 +159,10 @@ function findPage(m,d){for(var i=0;i<pages.length;i++){if(pages[i].m===m&&pages[
 function nextFrom(m,d){for(var i=0;i<pages.length;i++){if(pages[i].m>m||(pages[i].m===m&&pages[i].d>=d))return i;}return 0;}
 function showToday(instant){
   var n=new Date(),m=n.getMonth()+1,d=n.getDate(),i=findPage(m,d),lab=d+" "+MN[m-1];
-  if(i>=0){say("Remembered today, "+lab);render(i,instant);}
-  else{say("No page for "+lab+". Showing the next page.");render(nextFrom(m,d),instant);}
+  if(i>=0){
+    say(pages[i].items.length?"Remembered today, "+lab:"No remembrance entries for "+lab);
+    render(i,instant);
+  }
 }
 MN.forEach(function(n,i){var o=document.createElement("option");o.value=i+1;o.textContent=n;$("month").appendChild(o);});
 $("prev").onclick=function(){say();render(idx-1,false,-1);};
