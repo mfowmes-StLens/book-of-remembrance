@@ -52,6 +52,17 @@ ul.res li button:hover{background:#2c4391}
 ul.res li.msg{padding:8px 10px;font-size:.85rem;color:#b8c4e6}
 footer{flex:none;text-align:center;font-size:.72rem;color:#9fb0dd;line-height:1.35;padding-top:4px;border-top:1px solid #34467f}
 footer p{margin:0}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.empty{margin:20cqw 4cqw 0;text-align:center;font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;font-style:italic;font-size:clamp(.9rem,4.4cqw,1.25rem);line-height:1.5;color:#5b4e37;text-wrap:balance}
+.linkbtn{background:none;border:0;padding:0;margin-top:3px;font:inherit;font-size:inherit;color:var(--gold);text-decoration:underline;text-underline-offset:2px;cursor:pointer;border-radius:2px}
+.linkbtn:hover{background:none;color:#f4ead2}
+.about{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,16,40,.78)}
+.about[hidden]{display:none}
+.panel{position:relative;width:100%;max-width:440px;max-height:88vh;max-height:88dvh;overflow:auto;background:linear-gradient(135deg,var(--paper),var(--paper2));border:1px solid var(--edge);border-radius:4px;box-shadow:0 12px 36px rgba(0,0,0,.6),inset 0 0 50px rgba(150,120,60,.18);color:var(--ink);padding:22px 22px 18px;font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;line-height:1.5}
+.panel h2{margin:0 0 10px;font-weight:normal;font-size:1.25rem;letter-spacing:.03em}
+.panel p{margin:0 0 10px;font-size:1rem}
+.panel .close{margin-top:6px;background:#1f3270;border:1px solid #4a5f9e;color:#f4ead2;border-radius:6px;padding:6px 14px;font-size:.9rem}
+.panel .close:hover{background:#2c4391}
 footer a{color:var(--gold)}
 @media (max-height:560px){.tag{display:none}.church{font-size:.65rem}}
 @media (max-height:430px){footer{display:none}}
@@ -64,7 +75,7 @@ footer a{color:var(--gold)}
 <div>
 <p class="church">St Leonard&#39;s Church, Woodcote</p>
 <h1>Book of Remembrance</h1>
-<p class="tag" id="banner" aria-live="polite"></p>
+<p class="tag" id="banner"></p>
 </div>
 </header>
 <div class="area" id="area"><div class="page" id="page"><div class="inner" id="inner"></div></div><div class="shade" id="shade"></div></div>
@@ -75,9 +86,11 @@ footer a{color:var(--gold)}
 <button type="button" id="next">Next &#9654;</button>
 <select id="month" aria-label="Month"></select>
 <select id="pick" aria-label="Page in month"></select>
-<input class="search" id="q" type="search" placeholder="Search by name" aria-label="Search by name" autocomplete="off">
+<input class="search" id="q" type="search" placeholder="Search by name" aria-label="Search by name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 </div>
-<footer><p>In loving memory of those from our community who are remembered here. To report a correction, please contact the church office.</p></footer>
+<footer><p>In loving memory of those from our community who are remembered here. To report a correction, please contact the church office.</p><p><button type="button" class="linkbtn" id="aboutBtn" aria-haspopup="dialog">About the Book</button></p></footer>
+<div class="sr" id="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+<div class="about" id="about" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="aboutTitle"><h2 id="aboutTitle">About the Book of Remembrance</h2><p>St Leonard&#39;s Church, Woodcote maintains a Book of Remembrance containing the names of those remembered on the anniversary of their passing.</p><p>The Book records only those who are interred in the churchyard Garden of Remembrance.</p><p>This digital version shows each page of the Book on its day of remembrance, and lets you browse the Book at any time of year.</p><button type="button" class="close" id="aboutClose">Close</button></div></div>
 </div>
 <script>
 (function(){
@@ -100,6 +113,15 @@ var idx=0;
 var $=function(id){return document.getElementById(id);};
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function say(t){$("banner").textContent=t||TAG;}
+  var srTimer;
+  function announce(p){
+    if(!shown)return;
+    var n=p.items.length,sr=$("sr");
+    var msg=MN[p.m-1]+" "+p.d+", "+(n?n+(n===1?" remembrance entry":" remembrance entries"):"no remembrance entries");
+    sr.textContent="";
+    clearTimeout(srTimer);
+    srTimer=setTimeout(function(){sr.textContent=msg;},60);
+  }
 function ageText(a){var s=String(a);return /^\d+$/.test(s)?"aged "+s+" years":"aged "+s;}
 var shown=false,DUR=800,EASE="cubic-bezier(.45,.05,.3,1)";
 var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -110,6 +132,7 @@ function build(p){
     var dt=(e.y||e.a)?'<span class="dt">'+(e.y?'d. '+e.y+' ':'')+(e.a?esc(ageText(e.a)):'')+'</span>':'';
     h+='<div class="entry"><span class="sur">'+esc(e.s)+'</span> <span class="fn">'+esc(e.f)+'</span>'+dt+'</div>';
   });
+  if(!p.items.length){h+='<div class="empty">There are no entries in the Book for this date.</div>';}
   h+='</div><div class="bottom"><div class="rule"><span class="dia"></span><span class="line"></span><span class="dia"></span></div></div>';
   return h;
 }
@@ -151,6 +174,7 @@ function render(i,instant,dir){
     an.oncancel=function(){leaf.remove();};
     $("shade").animate(dir>0?[{opacity:.9},{opacity:0}]:[{opacity:0},{opacity:.9}],{duration:DUR,easing:EASE,fill:"none"});
   }
+  announce(p);
   shown=true;
   $("month").value=p.m;fillPick(p.m);$("pick").value=p.k;
   try{history.replaceState(null,"","#"+p.d+"-"+p.m);}catch(e){}
@@ -179,8 +203,12 @@ $("next").onclick=function(){say();render(idx+1,false,1);};
 $("today").onclick=function(){showToday();};
 $("month").onchange=function(){var m=+this.value;say();var i=pages.findIndex(function(p){return p.m===m;});if(i<0)i=nextFrom(m,1);render(i);};
 $("pick").onchange=function(){say();render(pages.indexOf(map[this.value]));};
+var lastQ=null;
+$("res").addEventListener("mousedown",function(e){e.preventDefault();});
 $("q").oninput=function(){
-  var t=this.value.trim().toLowerCase(),ul=$("res");ul.innerHTML="";
+  var t=this.value.trim().toLowerCase(),ul=$("res");
+  if(t===lastQ&&ul.firstChild)return;
+  lastQ=t;ul.innerHTML="";
   if(t.length<2)return;
   var hits=[];
   pages.forEach(function(p,i){p.items.forEach(function(e){if((e.s+" "+e.f).toLowerCase().indexOf(t)>-1)hits.push({i:i,e:e,p:p});});});
@@ -188,7 +216,7 @@ $("q").oninput=function(){
   hits.slice(0,30).forEach(function(h){
     var li=document.createElement("li"),b=document.createElement("button");b.type="button";
     b.textContent=h.e.s+" "+h.e.f+" - "+h.p.d+" "+MN[h.p.m-1];
-    b.onclick=function(){say();render(h.i);ul.innerHTML="";};
+    b.onclick=function(){say();render(h.i);ul.innerHTML="";lastQ=null;$("q").value="";};
     li.appendChild(b);ul.appendChild(li);
   });
 };
@@ -203,10 +231,24 @@ $("q").oninput=function(){
   ar.addEventListener("pointercancel",function(){x0=null;});
   document.addEventListener("keydown",function(e){
     var t=e.target&&e.target.tagName;
+    if(!$("about").hidden)return;
     if(t==="INPUT"||t==="SELECT"||t==="TEXTAREA")return;
     if(e.key==="ArrowRight"){say();render(idx+1,false,1);}
     else if(e.key==="ArrowLeft"){say();render(idx-1,false,-1);}
   });
+})();
+(function(){
+    var ab=$("about"),btn=$("aboutBtn"),cl=$("aboutClose");
+    function openAbout(){ab.hidden=false;cl.focus();}
+    function closeAbout(){ab.hidden=true;btn.focus();}
+    btn.onclick=openAbout;
+    cl.onclick=closeAbout;
+    ab.addEventListener("click",function(e){if(e.target===ab)closeAbout();});
+    document.addEventListener("keydown",function(e){
+      if(ab.hidden)return;
+      if(e.key==="Escape"){e.preventDefault();closeAbout();}
+      else if(e.key==="Tab"){e.preventDefault();cl.focus();}
+    });
 })();
 say();
 var hm=/^#(\d{1,2})-(\d{1,2})$/.exec(location.hash||"");
